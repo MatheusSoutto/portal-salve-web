@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import './App.css';
 import abi from './utils/WavePortal.json';
+import { Loading } from './Loading.jsx';
 
 export default function App() {
 
@@ -9,6 +10,7 @@ export default function App() {
   * Apenas uma variável de estado que utilizamos para armazenar a carteira pública do usuário.
   */
   const [currentAccount, setCurrentAccount] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   /**
    * Cria uma variável para guardar o endereço do contrato após o deploy!
    */
@@ -80,9 +82,11 @@ export default function App() {
         */
         const waveTxn = await wavePortalContract.wave();
         console.log("Minerando...", waveTxn.hash);
+        setIsLoading(true);
 
         await waveTxn.wait();
         console.log("Minerado -- ", waveTxn.hash);
+        setIsLoading(false);
 
         count = await wavePortalContract.getTotalWaves();
         console.log("Total de salves recuperado...", count.toNumber());
@@ -111,10 +115,14 @@ export default function App() {
         Eu sou o msoutto e sou desenvolvedor back end. Estou aprendendo desenvolvimento blockchain, sabia? Legal, né? Conecte sua carteira Ethereum wallet e me manda um salve!
         </div>
 
-        <button className="waveButton" onClick={wave}>
-          Mandar Salve 🌟
+        
+        <button 
+          className="waveButton disabled:opacity-60" 
+          onClick={wave}
+          disabled={isLoading}
+        >
+          {isLoading ? <Loading /> : 'Mandar Salve 🌟'}
         </button>
-
         {/*
         * Se não existir currentAccount, apresente este botão
         */}
