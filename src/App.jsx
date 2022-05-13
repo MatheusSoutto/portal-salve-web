@@ -101,6 +101,8 @@ export default function App() {
         console.log("Total de salves recuperado...", count.toNumber());
         
         setMessage("");
+        // certeza que temos uma carteira conectada
+        getAllWaves();
       } else {
         console.log("Objeto Ethereum não encontrado!");
       }
