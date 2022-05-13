@@ -10,11 +10,12 @@ export default function App() {
   * Apenas uma variável de estado que utilizamos para armazenar a carteira pública do usuário.
   */
   const [currentAccount, setCurrentAccount] = useState("");
+  const [allWaves, setAllWaves] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  /**
-   * Cria uma variável para guardar o endereço do contrato após o deploy!
-   */
-  const contractAddress = "0xc7B0E8846cdB6E1EFBf637CD416499eB73f3eC83";
+  const [message, setMessage] = useState("");
+  const contractAddress = "0xf36cD0CEa046B28268CD677dd65cAf6827c50CAc";
+  // old: "0x1a800ED538e46A05a62589Ce9bD0A25eeAA49AAf";
+  // old: "0xc7B0E8846cdB6E1EFBf637CD416499eB73f3eC83"
   const contractABI = abi.abi;
 
   const checkIfWalletIsConnected = async () => {
@@ -36,7 +37,10 @@ export default function App() {
       if (accounts.length !== 0) {
         const account = accounts[0];
         console.log("Encontrada a conta autorizada:", account);
-        setCurrentAccount(account)
+        setCurrentAccount(account);
+
+        // certeza que temos uma carteira conectada
+        getAllWaves();
       } else {
         console.log("Nenhuma conta autorizada foi encontrada")
       }
@@ -50,6 +54,8 @@ export default function App() {
   */
   const connectWallet = async () => {
     try {
+      setIsLoading(true);
+      
       const { ethereum } = window;
 
       if (!ethereum) {
@@ -64,10 +70,15 @@ export default function App() {
     } catch (error) {
       console.log(error)
     }
+    setIsLoading(false);
   }
 
-  const wave = async () => {
+  const wave = async (event) => {
+    event.preventDefault();
+    
     try {
+      setIsLoading(true);
+      
       const { ethereum } = window;
 
       if (ethereum) {
@@ -80,22 +91,63 @@ export default function App() {
         /*
         * Executar o tchauzinho a partir do contrato inteligente
         */
-        const waveTxn = await wavePortalContract.wave();
+        const waveTxn = await wavePortalContract.wave(message);
         console.log("Minerando...", waveTxn.hash);
-        setIsLoading(true);
 
         await waveTxn.wait();
         console.log("Minerado -- ", waveTxn.hash);
-        setIsLoading(false);
 
         count = await wavePortalContract.getTotalWaves();
         console.log("Total de salves recuperado...", count.toNumber());
         
+        setMessage("");
       } else {
         console.log("Objeto Ethereum não encontrado!");
       }
     } catch (error) {
       console.log(error)
+    }
+    setIsLoading(false);
+  }
+
+  /*
+  * Método para consultar todos os tchauzinhos do contrato
+  */
+  const getAllWaves = async () => {
+    try {
+      const { ethereum } = window;
+      if (ethereum) {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const wavePortalContract = new ethers.Contract(contractAddress, contractABI, signer);
+
+        /*
+         * Chama o método getAllWaves do seu contrato inteligente
+         */
+        const waves = await wavePortalContract.getAllWaves();
+        console.log(waves);
+
+        /*
+         * Apenas precisamos do endereço, data/horário, e mensagem na nossa tela, então vamos selecioná-los
+         */
+        let wavesCleaned = [];
+        waves.forEach(wave => {
+          wavesCleaned.push({
+            address: wave.waver,
+            timestamp: new Date(wave.timestamp * 1000),
+            message: wave.message
+          });
+        });
+
+        /*
+         * Armazenando os dados
+         */
+        setAllWaves(wavesCleaned);
+      } else {
+        console.log("Objeto Ethereum não existe!")
+      }
+    } catch (error) {
+      console.log(error);
     }
   }
 
@@ -115,22 +167,42 @@ export default function App() {
         Eu sou o msoutto e sou desenvolvedor back end. Estou aprendendo desenvolvimento blockchain, sabia? Legal, né? Conecte sua carteira Ethereum wallet e me manda um salve!
         </div>
 
-        
-        <button 
-          className="waveButton disabled:opacity-60" 
-          onClick={wave}
-          disabled={isLoading}
-        >
-          {isLoading ? <Loading /> : 'Mandar Salve 🌟'}
-        </button>
-        {/*
-        * Se não existir currentAccount, apresente este botão
-        */}
-        {!currentAccount && (
-          <button className="waveButton" onClick={connectWallet}>
+        <div className="p-4 relative rounded-2xl flex flex-col items-center shadow-lg w-[calc(100vw-2rem)] md:w-auto">
+        {currentAccount ? (
+          <form className="my-4 w-full items-center" onSubmit={wave}>
+            <textarea 
+              className="min-w-[304px] w-full min-h-[112px] text-sm placeholder-zinc-400 text-zinc-600 border-zinc-300 bg-transparent rounded-md focus:border-indigo-500 focus:ring-indigo-500 focus:ring-1 focus:outline-none resize-none scrollbar scrollbar-thumb-zinc-700 scrollbar-track-transparent scrollbar-thin"
+              placeholder="Salve! Que projeto interessante..."
+              onChange={event => setMessage(event.target.value)}
+            />
+            <footer className="flex gap-2 mt-2">
+              <button 
+                type="submit"
+                className="p-2 bg-indigo-600 rounded-md border-transparent flex-1 flex justify-center items-center text-sm text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-900 focus:ring-brand-500 transition-colors disabled:opacity-70 disabled:hover:bg-indigo-600"
+                disabled={message.length == 0 || isLoading}
+              >
+                {isLoading ? <Loading /> : 'Mandar Salve 🌟'}
+              </button>
+            </footer>
+          </form>
+        ) : (
+          <button className="p-2 bg-indigo-600 rounded-md border-transparent flex-1 flex justify-center items-center text-sm text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-900 focus:ring-indigo-500 transition-colors disabled:opacity-60 disabled:hover:bg-indigo-500"
+            onClick={connectWallet}
+            disabled={isLoading}
+          >
             Conectar carteira
           </button>
         )}
+        </div>
+
+        {allWaves.map((wave, index) => {
+          return (
+            <div key={index} style={{ backgroundColor: "OldLace", marginTop: "16px", padding: "8px" }}>
+              <div>Endereço: {wave.address}</div>
+              <div>Data/Horário: {wave.timestamp.toString()}</div>
+              <div>Mensagem: {wave.message}</div>
+            </div>)
+        })}
       </div>
     </div>
   );
