@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import './App.css';
+import abi from './utils/WavePortal.json';
 
 export default function App() {
 
@@ -8,6 +9,11 @@ export default function App() {
   * Apenas uma variável de estado que utilizamos para armazenar a carteira pública do usuário.
   */
   const [currentAccount, setCurrentAccount] = useState("");
+  /**
+   * Cria uma variável para guardar o endereço do contrato após o deploy!
+   */
+  const contractAddress = "0xc7B0E8846cdB6E1EFBf637CD416499eB73f3eC83";
+  const contractABI = abi.abi;
 
   const checkIfWalletIsConnected = async () => {
     try {
@@ -58,13 +64,40 @@ export default function App() {
     }
   }
 
+  const wave = async () => {
+    try {
+      const { ethereum } = window;
+
+      if (ethereum) {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const wavePortalContract = new ethers.Contract(contractAddress, contractABI, signer);
+
+        let count = await wavePortalContract.getTotalWaves();
+        console.log("Recuperado o número de salves...", count.toNumber());
+        /*
+        * Executar o tchauzinho a partir do contrato inteligente
+        */
+        const waveTxn = await wavePortalContract.wave();
+        console.log("Minerando...", waveTxn.hash);
+
+        await waveTxn.wait();
+        console.log("Minerado -- ", waveTxn.hash);
+
+        count = await wavePortalContract.getTotalWaves();
+        console.log("Total de salves recuperado...", count.toNumber());
+        
+      } else {
+        console.log("Objeto Ethereum não encontrado!");
+      }
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
   useEffect(() => {
     checkIfWalletIsConnected();
   }, []);
-
-  const wave = () => {
-    
-  }
   
   return (
     <div className="mainContainer">
