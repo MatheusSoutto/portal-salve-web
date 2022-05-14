@@ -13,9 +13,10 @@ export default function App() {
   const [allWaves, setAllWaves] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const contractAddress = "0xf36cD0CEa046B28268CD677dd65cAf6827c50CAc";
+  const contractAddress = "0xB127CdAbeC776A7f7BCc9C1700970C7e2c66aec0";
+  // old: "0xf36cD0CEa046B28268CD677dd65cAf6827c50CAc";
   // old: "0x1a800ED538e46A05a62589Ce9bD0A25eeAA49AAf";
-  // old: "0xc7B0E8846cdB6E1EFBf637CD416499eB73f3eC83"
+  // old: "0xc7B0E8846cdB6E1EFBf637CD416499eB73f3eC83";
   const contractABI = abi.abi;
 
   const checkIfWalletIsConnected = async () => {
@@ -23,7 +24,7 @@ export default function App() {
       const { ethereum } = window;
 
       if (!ethereum) {
-        console.log("Garanta que possua a Metamask instalada!");
+        console.log("Garanta que possui a Metamask instalada!");
         return;
       } else {
         console.log("Temos o objeto ethereum", ethereum);
@@ -59,7 +60,7 @@ export default function App() {
       const { ethereum } = window;
 
       if (!ethereum) {
-        alert("MetaMask encontrada!");
+        alert("MetaMask não encontrada!");
         return;
       }
 
