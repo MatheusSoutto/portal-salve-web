@@ -13,10 +13,10 @@ export default function App() {
   const [allWaves, setAllWaves] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const contractAddress = "0xB127CdAbeC776A7f7BCc9C1700970C7e2c66aec0";
-  // old: "0xf36cD0CEa046B28268CD677dd65cAf6827c50CAc";
-  // old: "0x1a800ED538e46A05a62589Ce9bD0A25eeAA49AAf";
-  // old: "0xc7B0E8846cdB6E1EFBf637CD416499eB73f3eC83";
+  const contractAddress = "0x6BBA1956a25E56Bb01d44a92F6B3f8DC6ce466FD";
+  // old: "0xECB13ec6f290d591315698Cb3EC524acA61a2B1C";
+  // old: "0x2e93271Aa9125caF5D70160f68b6309BA1d78fCc";
+  // old: "0xaC81139E35fa286Fd27e5bD526a06D3EB5b63388";
   const contractABI = abi.abi;
 
   const checkIfWalletIsConnected = async () => {
@@ -92,7 +92,7 @@ export default function App() {
         /*
         * Executar o tchauzinho a partir do contrato inteligente
         */
-        const waveTxn = await wavePortalContract.wave(message);
+        const waveTxn = await wavePortalContract.wave(message, { gasLimit: 300000 });
         console.log("Minerando...", waveTxn.hash);
 
         await waveTxn.wait();
@@ -102,13 +102,11 @@ export default function App() {
         console.log("Total de salves recuperado...", count.toNumber());
         
         setMessage("");
-        // certeza que temos uma carteira conectada
-        getAllWaves();
       } else {
         console.log("Objeto Ethereum não encontrado!");
       }
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
     setIsLoading(false);
   }
@@ -119,6 +117,7 @@ export default function App() {
   const getAllWaves = async () => {
     try {
       const { ethereum } = window;
+      
       if (ethereum) {
         const provider = new ethers.providers.Web3Provider(ethereum);
         const signer = provider.getSigner();
@@ -153,6 +152,39 @@ export default function App() {
       console.log(error);
     }
   }
+
+  /**
+  * Escuta por eventos emitidos!
+  */
+  useEffect(() => {
+    let wavePortalContract;
+
+    const onNewWave = (from, timestamp, message) => {
+      console.log("NewWave", from, timestamp, message);
+      setAllWaves(prevState => [
+        ...prevState,
+        {
+          address: from,
+          timestamp: new Date(timestamp * 1000),
+          message: message,
+        },
+      ]);
+    };
+
+    if (window.ethereum) {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+
+      wavePortalContract = new ethers.Contract(contractAddress, contractABI, signer);
+      wavePortalContract.on("NewWave", onNewWave);
+    }
+
+    return () => {
+      if (wavePortalContract) {
+        wavePortalContract.off("NewWave", onNewWave);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     checkIfWalletIsConnected();
